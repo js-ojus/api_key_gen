@@ -1,4 +1,4 @@
-package main
+package apikeygen
 
 import (
 	"bytes"
@@ -6,12 +6,11 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"fmt"
 	"regexp"
 	"strings"
 )
 
-func main() {
+func Generate() (string, string, string, error) {
 	// Regexp to remove non-alphanumeric characters from ClientID.
 	re := regexp.MustCompile(`[-+/]`)
 
@@ -19,8 +18,7 @@ func main() {
 	buf1 := make([]byte, 20)
 	_, err := rand.Read(buf1)
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		return "", "", "", err
 	}
 	var out1 bytes.Buffer
 	enc := base64.NewEncoder(base64.RawStdEncoding, &out1)
@@ -28,24 +26,22 @@ func main() {
 	enc.Close()
 	s1 := out1.String()
 	s2 := strings.ToUpper(re.ReplaceAllString(s1, ""))[:20]
-	fmt.Printf("%12s : %s\n", "ClientID", s2)
 
 	// Generate the ClientSecret.
 	buf2 := make([]byte, 30)
 	_, err = rand.Read(buf2)
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		return "", "", "", err
 	}
 
 	var out2 bytes.Buffer
 	enc = base64.NewEncoder(base64.RawStdEncoding, &out2)
 	enc.Write(buf2)
 	enc.Close()
-	fmt.Printf("%12s : %s\n", "ClientSecret", out2.String())
 
 	// Generate the hash of the ClientSecret.
 	hash := sha256.Sum256(out2.Bytes())
 	hashString := hex.EncodeToString(hash[:])
-	fmt.Printf("%12s : %s\n", "SecretHash", hashString)
+
+	return s2, out2.String(), hashString, nil
 }
